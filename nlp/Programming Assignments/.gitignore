@@ -185,3 +185,9 @@ fabric.properties
 # .idea
 
 *.pdf
+brown/*
+brown_news/*
+data_small/*
+/PA3/brown/*
+/PA3/brown_news/*
+/PA3/data_small/*
