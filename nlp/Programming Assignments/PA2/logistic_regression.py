@@ -210,7 +210,9 @@ def sigma(z):
 class LogisticRegression:
 
     def __init__(self, n_features=4):
-        self.class_dict = dict()
+        # be sure to use the right class_dict for each data set
+        self.class_dict = {'neg': 0, 'pos': 1}
+        # self.class_dict = {'action': 0, 'comedy': 1}
         self.feature_dict = dict()
         self.n_features = n_features
         self.theta = np.zeros(n_features + 1)  # weights (and bias)
@@ -230,15 +232,10 @@ class LogisticRegression:
         documents = dict()
         files_words = dict()
         for root, dirs, files in os.walk(data_set):
-            # Use the directory names to populate the class labels. Maybe a bad assumption?
-            if dirs:
-                self.class_dict = {dirs[i]: i for i in range(len(dirs))}
-
             # This assumes that the only directory containing any files will be the training/testing data. Otherwise,
             # this will crash.
             cls = root.split(os.sep)[-1]
             word_counts = dict()
-
             for name in files:
                 with open(os.path.join(root, name)) as f:
                     filenames.append(name)
@@ -310,7 +307,7 @@ class LogisticRegression:
     "dummy feature" with value 1.
     '''
 
-    def __get_num_occurences_of_top_five(self, document):
+    def __get_num_occurrences_of_top_five(self, document):
         counts = {}
         for cls, _dict in self.cls_word_counts.items():
             temp = dict()
@@ -319,19 +316,51 @@ class LogisticRegression:
             counts[cls] = temp
 
         for cls, _dict in counts.items():
+            d = self.cls_word_counts[cls]
             for word in document:
                 if word in _dict:
                     _dict[word] += 1
         return counts
 
+    @staticmethod
+    def __contains_negative_words(document):
+        negatives = ['bad', 'awful', 'terrible', 'gross', 'abysmal', 'annoy', 'annoying']
+        res = []
+        for word in negatives:
+            if word in document:
+                res.append(1)
+            else:
+                res.append(0)
+        return res
+
+    @staticmethod
+    def __contains_positive_words(document):
+        negatives = ['good', 'great', 'awesome', 'amazing', 'brilliant', 'beautiful', 'delightful', 'delight']
+        res = []
+        for word in negatives:
+            if word in document:
+                res.append(1)
+            else:
+                res.append(0)
+        return res
+
     def featurize(self, document):
         vector = np.zeros(self.n_features + 1)
-        counts = self.__get_num_occurences_of_top_five(document)
+        counts = self.__get_num_occurrences_of_top_five(document)
         i = 0
         for cls, dict in counts.items():
             for word_count in dict.values():
                 vector[i] = word_count
                 i += 1
+
+        pos = self.__contains_positive_words(document)
+        negs = self.__contains_negative_words(document)
+        for val in pos:
+            vector[i] = val
+            i += 1
+        for val in negs:
+            vector[i] = val
+            i += 1
 
         vector[-2] = len(document)
 
@@ -354,7 +383,8 @@ class LogisticRegression:
     # LCE(ˆy, y) = −[y log ˆy + (1 − y) log(1 − yˆ)]
     @staticmethod
     def cross_entropy_loss(Y, y_hat):
-        return -1 * (Y @ np.log(y_hat) + (1 - Y) @ np.log(1 - y_hat))
+        eps = np.finfo(float).eps
+        return -1 * (Y @ np.log(y_hat + eps) + (1 - Y) @ np.log(1 - y_hat + eps))
 
     '''
     Trains a logistic regression classifier on a training set.
@@ -378,14 +408,13 @@ class LogisticRegression:
                 y_hat = sigma(np.dot(X, self.theta))
 
                 # update loss
-                ce_loss = np.sum(self.cross_entropy_loss(Y, y_hat))
-                loss += ce_loss
+                loss += np.sum(self.cross_entropy_loss(Y, y_hat))
 
                 # compute gradient
-                grad_batch = np.dot(X.T, (Y - y_hat)) / len(minibatch)
+                grad_batch = np.dot(X.T, (y_hat - Y)) / len(minibatch)
 
                 # update weights (and bias)
-                self.theta = self.theta - eta * grad_batch
+                self.theta -= eta * grad_batch
 
             loss /= len(filenames)
             print("Average Train Loss: {}".format(loss))
@@ -394,7 +423,7 @@ class LogisticRegression:
 
     def __determine_class(self, y_hat):
         vals = list(self.class_dict.values())
-        if y_hat >= 0.5:
+        if y_hat <= 0.5:
             return vals[0]
         return vals[1]
 
@@ -455,11 +484,11 @@ class LogisticRegression:
 
 
 if __name__ == '__main__':
-    lr = LogisticRegression(n_features=8)
-    # lr = LogisticRegression(n_features=11)
+    # lr = LogisticRegression(n_features=23)
+    lr = LogisticRegression(n_features=26)
     # make sure these point to the right directories
-    # lr.train('movie_reviews/train', batch_size=3, n_epochs=1, eta=0.1)
-    lr.train('movie_reviews_small/train', batch_size=3, n_epochs=1, eta=0.1)
-    # results = lr.test('movie_reviews/dev')
-    results = lr.test('movie_reviews_small/test')
+    lr.train('movie_reviews/train', batch_size=30, n_epochs=20, eta=0.01)
+    # lr.train('movie_reviews_small/train', batch_size=3, n_epochs=1, eta=0.1)
+    results = lr.test('movie_reviews/dev')
+    # results = lr.test('movie_reviews_small/test')
     lr.evaluate(results)
