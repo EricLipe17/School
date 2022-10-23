@@ -54,8 +54,8 @@ class POSTagger:
         # if you implemented the rest of this
         #  function correctly, these should be formatted
         #  as they are above in __init__
-        self.tag_dict = {v: k for k, v in enumerate(tag_vocabulary)}
-        self.word_dict = {v: k for k, v in enumerate(word_vocabulary)}
+        # self.tag_dict = {v: k for k, v in enumerate(tag_vocabulary)}
+        # self.word_dict = {v: k for k, v in enumerate(word_vocabulary)}
 
     '''
     Loads a dataset. Specifically, returns a list of sentence_ids, and
@@ -162,16 +162,16 @@ class POSTagger:
     def train(self, train_set, dummy_data=None):
         self.make_dicts(train_set)
         sentence_ids, sentences, tag_lists, word_lists = self.load_data(train_set)
-        if dummy_data is None:  # for automated testing: DO NOT CHANGE!!
-            Random(0).shuffle(sentence_ids)
-            self.initial = np.zeros(len(self.tag_dict))
-            self.transition = np.zeros((len(self.tag_dict), len(self.tag_dict)))
-            self.emission = np.zeros((len(self.word_dict), len(self.tag_dict)))
-        else:
-            sentence_ids = dummy_data[0]
-            sentences = dummy_data[1]
-            tag_lists = dummy_data[2]
-            word_lists = dummy_data[3]
+        # if dummy_data is None:  # for automated testing: DO NOT CHANGE!!
+        #     Random(0).shuffle(sentence_ids)
+        #     self.initial = np.zeros(len(self.tag_dict))
+        #     self.transition = np.zeros((len(self.tag_dict), len(self.tag_dict)))
+        #     self.emission = np.zeros((len(self.word_dict), len(self.tag_dict)))
+        # else:
+        #     sentence_ids = dummy_data[0]
+        #     sentences = dummy_data[1]
+        #     tag_lists = dummy_data[2]
+        #     word_lists = dummy_data[3]
         for i, sentence_id in enumerate(sentence_ids):
             # BEGIN STUDENT CODE
             # get the word sequence for this sentence and the correct tag sequence
