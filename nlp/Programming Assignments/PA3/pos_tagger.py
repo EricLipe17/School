@@ -132,26 +132,31 @@ class POSTagger:
         # initialization step
         #  fill out first column of viterbi trellis
         #  with initial + emission weights of the first observation
-        for i in range(T):
-            word, tag = sentence[i].rsplit('/', 1)
-            tag_index = self.tag_dict[tag]
-            word_index = self.word_dict[word]
-            v[i][0] = self.initial[tag_index] + self.emission[word_index][tag_index]
+        word, _ = sentence[0].rsplit('/', 1)
+        v[:, 0] = self.initial + self.emission[self.word_dict[word]]
 
         # recursion step
-        #  1) fill out the t-th column of viterbi trellis
-        #  with the max of the t-1-th column of trellis
-        #  + transition weights to each state
-        #  + emission weights of t-th observateion
+        for i in range(1, T):
+            #  1) fill out the t-th column of viterbi trellis
+            #  with the max of the t-1-th column of trellis
+            #  + transition weights to each state
+            #  + emission weights of t-th observation
+            curr_word, curr_tag = sentence[i].rsplit('/', 1)
+            viterbi_prev_word = np.reshape(v[:, i - 1], (len(v[:, i - 1]), 1))
+            word_emission_probs = self.emission[self.word_dict[curr_word], :]
 
+            mat = viterbi_prev_word + self.transition + word_emission_probs
+            max_vector = np.amax(mat, axis=0)
+            v[:, i] = max_vector
 
-        #  2) fill out the t-th column of the backpointer trellis
-        #  with the associated argmax values
-        # termination step
+            #  2) fill out the t-th column of the backpointer trellis
+            #  with the associated argmax values
+            # termination step
+            backpointer[:, i] = np.where(mat == max_vector)[0]
 
+            #  1) get the most likely ending state, insert it into best_path
+            #  2) fill out best_path from backpointer trellis`
 
-        #  1) get the most likely ending state, insert it into best_path
-        #  2) fill out best_path from backpointer trellis
         # END STUDENT CODE
         return best_path
 
