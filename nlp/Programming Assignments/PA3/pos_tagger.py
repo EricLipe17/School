@@ -7,7 +7,8 @@ from collections import defaultdict
 import random
 from random import Random
 
-class POSTagger():
+
+class POSTagger:
 
     def __init__(self):
         # for testing with the toy corpus from worked example
@@ -32,6 +33,7 @@ class POSTagger():
     '''
     Fills in self.tag_dict and self.word_dict, based on the training data.
     '''
+
     def make_dicts(self, train_set):
         tag_vocabulary = set()
         word_vocabulary = set()
@@ -42,8 +44,12 @@ class POSTagger():
                     # BEGIN STUDENT CODE
                     # create vocabularies of every tag and word
                     #  that exists in the training data
+                    for line in f:
+                        for word in line.split():
+                            word_and_pos = word.rsplit('/', 1)
+                            tag_vocabulary.add(word_and_pos[1])
+                            word_vocabulary.add(word_and_pos[0])
                     # END STUDENT CODE
-                    pass # remove pass keyword when finished
         # create tag_dict and word_dict
         # if you implemented the rest of this
         #  function correctly, these should be formatted
@@ -57,8 +63,9 @@ class POSTagger():
     tag_lists[sentence_id] = list of part-of-speech tags in the sentence
     word_lists[sentence_id] = list of words in the sentence
     '''
+
     def load_data(self, data_set):
-        sentence_ids = [] # doc name + ordinal number of sentence (e.g., ca010)
+        sentence_ids = []  # doc name + ordinal number of sentence (e.g., ca010)
         sentences = dict()
         tag_lists = dict()
         word_lists = dict()
@@ -74,14 +81,47 @@ class POSTagger():
                     #  2) create the sentence ID, add it to sentence_ids
                     #  3) add this sentence's tag list to tag_lists and word
                     #     list to word_lists
+                    words = []
+                    words_and_pos = []
+                    tags = []
+                    index = 0
+                    for line in f:
+                        for word in line.split():
+                            word_and_pos = word.rsplit('/', 1)
+
+                            words.append(self.word_dict[word_and_pos[0]])
+                            tags.append(self.tag_dict[word_and_pos[1]])
+                            words_and_pos.append(word)
+
+                            if word_and_pos[1] == ".":
+                                sentence_id = name + str(index)
+                                sentence_ids.append(sentence_id)
+
+                                sentences[sentence_id] = words_and_pos
+                                word_lists[sentence_id] = words
+                                tag_lists[sentence_id] = tags
+
+                                words = []
+                                words_and_pos = []
+                                tags = []
+
+                    # If we don't ever see the sentence termination we assume all words collected to that point are a
+                    # sentence.
+                    if len(words) + len(tags) + len(words_and_pos) > 0:
+                        sentence_id = name + str(index)
+                        sentence_ids.append(sentence_id)
+
+                        sentences[sentence_id] = words_and_pos
+                        word_lists[sentence_id] = words
+                        tag_lists[sentence_id] = tags
                     # END STUDENT CODE
-                    pass # remove pass keyword when finished
         return sentence_ids, sentences, tag_lists, word_lists
 
     '''
     Implements the Viterbi algorithm.
     Use v and backpointer to find the best_path.
     '''
+
     def viterbi(self, sentence):
         T = len(sentence)
         N = len(self.tag_dict)
@@ -92,14 +132,24 @@ class POSTagger():
         # initialization step
         #  fill out first column of viterbi trellis
         #  with initial + emission weights of the first observation
+        for i in range(T):
+            word, tag = sentence[i].rsplit('/', 1)
+            tag_index = self.tag_dict[tag]
+            word_index = self.word_dict[word]
+            v[i][0] = self.initial[tag_index] + self.emission[word_index][tag_index]
+
         # recursion step
         #  1) fill out the t-th column of viterbi trellis
         #  with the max of the t-1-th column of trellis
         #  + transition weights to each state
         #  + emission weights of t-th observateion
+
+
         #  2) fill out the t-th column of the backpointer trellis
         #  with the associated argmax values
         # termination step
+
+
         #  1) get the most likely ending state, insert it into best_path
         #  2) fill out best_path from backpointer trellis
         # END STUDENT CODE
@@ -108,10 +158,11 @@ class POSTagger():
     '''
     Trains a structured perceptron part-of-speech tagger on a training set.
     '''
+
     def train(self, train_set, dummy_data=None):
         self.make_dicts(train_set)
         sentence_ids, sentences, tag_lists, word_lists = self.load_data(train_set)
-        if dummy_data is None: # for automated testing: DO NOT CHANGE!!
+        if dummy_data is None:  # for automated testing: DO NOT CHANGE!!
             Random(0).shuffle(sentence_ids)
             self.initial = np.zeros(len(self.tag_dict))
             self.transition = np.zeros((len(self.tag_dict), len(self.tag_dict)))
@@ -125,6 +176,8 @@ class POSTagger():
             # BEGIN STUDENT CODE
             # get the word sequence for this sentence and the correct tag sequence
             # use viterbi to predict
+            self.viterbi(sentences[sentence_id])
+
             # if mistake
             #  promote weights that appear in correct sequence
             #  demote weights that appear in (incorrect) predicted sequence
@@ -139,10 +192,11 @@ class POSTagger():
     results[sentence_id]['correct'] = correct sequence of tags
     results[sentence_id]['predicted'] = predicted sequence of tags
     '''
+
     def test(self, dev_set, dummy_data=None):
         results = defaultdict(dict)
         sentence_ids, sentences, tag_lists, word_lists = self.load_data(dev_set)
-        if dummy_data is not None: # for automated testing: DO NOT CHANGE!!
+        if dummy_data is not None:  # for automated testing: DO NOT CHANGE!!
             sentence_ids = dummy_data[0]
             sentences = dummy_data[1]
             tag_lists = dummy_data[2]
@@ -160,6 +214,7 @@ class POSTagger():
     This evaluate function calculates accuracy ONLY,
     no precision or recall calculations are required.
     '''
+
     def evaluate(self, sentences, results, dummy_data=False):
         if not dummy_data:
             self.sample_results(sentences, results)
@@ -168,13 +223,14 @@ class POSTagger():
         # for each sentence, how many words were correctly tagged out of the total words in that sentence?
         # END STUDENT CODE
         return accuracy
-        
+
     '''
     Prints out some sample results, with original sentence,
     correct tag sequence, and predicted tag sequence.
     This is just to view some results in an interpretable format.
     You do not need to do anything in this function.
     '''
+
     def sample_results(self, sentences, results, size=2):
         print('\nSample results')
         results_sample = [random.choice(list(results)) for i in range(size)]
@@ -183,18 +239,17 @@ class POSTagger():
             length = len(results[sentence_id]['correct'])
             correct_tags = [inv_tag_dict[results[sentence_id]['correct'][i]] for i in range(length)]
             predicted_tags = [inv_tag_dict[results[sentence_id]['predicted'][i]] for i in range(length)]
-            print(sentence_id,\
-                sentences[sentence_id],\
-                'Correct:\t',correct_tags,\
-                '\n Predicted:\t',predicted_tags,'\n')
+            print(sentence_id, sentences[sentence_id], 'Correct:\t', correct_tags, '\n Predicted:\t', predicted_tags,
+                  '\n')
+
 
 if __name__ == '__main__':
     pos = POSTagger()
     # make sure these point to the right directories
-    pos.train('data_small/train') # train: toy data
-    #pos.train('brown_news/train') # train: news data only
-    #pos.train('brown/train') # train: full data
-    sentences, results = pos.test('data_small/test') # test: toy data
-    #sentences, results = pos.test('brown_news/dev') # test: news data only
-    #sentences, results = pos.test('brown/dev') # test: full data
+    pos.train('data_small/train')  # train: toy data
+    # pos.train('brown_news/train') # train: news data only
+    # pos.train('brown/train') # train: full data
+    sentences, results = pos.test('data_small/test')  # test: toy data
+    # sentences, results = pos.test('brown_news/dev') # test: news data only
+    # sentences, results = pos.test('brown/dev') # test: full data
     print('\nAccuracy:', pos.evaluate(sentences, results))
