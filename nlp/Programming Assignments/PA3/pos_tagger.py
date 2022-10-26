@@ -265,10 +265,12 @@ class POSTagger:
         # BEGIN STUDENT CODE
         # for each sentence, how many words were correctly tagged out of the total words in that sentence?
         total_correct = 0
+        total = 0
         for sentence_id in results:
             for correct, predicted in zip(results[sentence_id]['correct'], results[sentence_id]['predicted']):
                 total_correct += correct == predicted
-        accuracy = total_correct / float(len(self.word_dict))
+                total += 1
+        accuracy = total_correct / float(total)
         # END STUDENT CODE
         return accuracy
 
@@ -287,7 +289,7 @@ class POSTagger:
             length = len(results[sentence_id]['correct'])
             correct_tags = [inv_tag_dict[results[sentence_id]['correct'][i]] for i in range(length)]
             predicted_tags = [inv_tag_dict[results[sentence_id]['predicted'][i]] for i in range(length)]
-            print(sentence_id, sentences[sentence_id], 'Correct:\t', correct_tags, '\n Predicted:\t', predicted_tags,
+            print(sentence_id, sentences[sentence_id], '\n Correct:\t', correct_tags, '\n Predicted:\t', predicted_tags,
                   '\n')
 
 
@@ -295,9 +297,9 @@ if __name__ == '__main__':
     pos = POSTagger()
     # make sure these point to the right directories
     # pos.train('data_small/train')  # train: toy data
-    pos.train('brown_news/train') # train: news data only
-    # pos.train('brown/train') # train: full data
+    # pos.train('brown_news/train') # train: news data only
+    pos.train('brown/train') # train: full data
     # sentences, results = pos.test('data_small/test')  # test: toy data
-    sentences, results = pos.test('brown_news/dev') # test: news data only
-    # sentences, results = pos.test('brown/dev') # test: full data
+    # sentences, results = pos.test('brown_news/dev') # test: news data only
+    sentences, results = pos.test('brown/dev') # test: full data
     print('\nAccuracy:', pos.evaluate(sentences, results))
