@@ -36,8 +36,8 @@ class POSTagger:
 
     def make_dicts(self, train_set):
         # Changing these to dictionaries because I want order preserved
-        tag_vocabulary = dict()
-        word_vocabulary = dict()
+        tag_vocabulary = set()
+        word_vocabulary = set()
         # iterate over training documents
         for root, dirs, files in os.walk(train_set):
             files.sort()
@@ -49,8 +49,8 @@ class POSTagger:
                     for line in f:
                         for word in line.split():
                             word_and_pos = word.rsplit('/', 1)
-                            tag_vocabulary[word_and_pos[1]] = None
-                            word_vocabulary[word_and_pos[0]] = None
+                            tag_vocabulary.add(word_and_pos[1])
+                            word_vocabulary.add(word_and_pos[0])
                     # END STUDENT CODE
         # create tag_dict and word_dict
         # if you implemented the rest of this
