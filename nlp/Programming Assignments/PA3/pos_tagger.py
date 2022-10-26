@@ -94,20 +94,12 @@ class POSTagger:
                             if word_and_pos[0] in self.word_dict:
                                 word_index = self.word_dict[word_and_pos[0]]
                             words.append(word_index)
-                            if word_and_pos[1] not in self.tag_dict:
-                                init_col = np.zeros((len(self.tag_dict), 1))
-                                self.tag_dict[word_and_pos[1]] = len(self.tag_dict)
-                                new_row = np.zeros(len(self.tag_dict))
-                                emission_col = np.zeros((self.emission.shape[0], 1))
 
-                                self.transition = np.concatenate([self.transition, init_col], axis=1)
-                                self.transition = np.vstack((self.transition, new_row))
+                            tag = self.unk_index
+                            if word_and_pos[1] in self.tag_dict:
+                                tag = self.tag_dict[word_and_pos[1]]
 
-                                self.initial = np.append(self.initial, [0])
-
-                                self.emission = np.concatenate([self.emission, emission_col], axis=1)
-
-                            tags.append(self.tag_dict[word_and_pos[1]])
+                            tags.append(tag)
                             words_and_pos += word + " "
 
                             if word_and_pos[1] == ".":
@@ -303,13 +295,6 @@ class POSTagger:
 
 
 if __name__ == '__main__':
-    ini_array = np.array([[1, 2, 3], [45, 4, 7], [9, 6, 10]])
-
-    # Array to be added as row
-    row_to_be_added = np.array([1, 2, 3])
-
-    # Adding row to numpy array
-    result = np.vstack((ini_array, row_to_be_added))
     pos = POSTagger()
     # make sure these point to the right directories
     # pos.train('data_small/train')  # train: toy data
