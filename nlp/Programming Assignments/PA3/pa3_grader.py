@@ -104,12 +104,12 @@ if (np.allclose(pos.initial, expected_initial) and \
         np.allclose(pos.emission, expected_emission)):
     print('PASSED\n')
 else:
-    print('Correct initial weights:', expected_initial)
-    print('Output initial weights:', pos.initial)
-    print('Correct transition weights:', expected_transition)
-    print('Output transition weights:', pos.transition)
-    print('Correct emission weights:', expected_emission)
-    print('Output emission weights:', pos.emission)
+    print('Correct initial weights:\n', expected_initial)
+    print('Output initial weights:\n', pos.initial)
+    print('Correct transition weights:\n', expected_transition)
+    print('Output transition weights:\n', pos.transition)
+    print('Correct emission weights:\n', expected_emission)
+    print('Output emission weights:\n', pos.emission)
     print('FAILED\n')
 
 print('5. Testing viterbi on dummy data...\n', end='')

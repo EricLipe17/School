@@ -35,10 +35,12 @@ class POSTagger:
     '''
 
     def make_dicts(self, train_set):
-        tag_vocabulary = set()
-        word_vocabulary = set()
+        # Changing these to dictionaries because I want order preserved
+        tag_vocabulary = dict()
+        word_vocabulary = dict()
         # iterate over training documents
         for root, dirs, files in os.walk(train_set):
+            files.sort()
             for name in files:
                 with open(os.path.join(root, name)) as f:
                     # BEGIN STUDENT CODE
@@ -47,15 +49,15 @@ class POSTagger:
                     for line in f:
                         for word in line.split():
                             word_and_pos = word.rsplit('/', 1)
-                            tag_vocabulary.add(word_and_pos[1])
-                            word_vocabulary.add(word_and_pos[0])
+                            tag_vocabulary[word_and_pos[1]] = None
+                            word_vocabulary[word_and_pos[0]] = None
                     # END STUDENT CODE
         # create tag_dict and word_dict
         # if you implemented the rest of this
         #  function correctly, these should be formatted
         #  as they are above in __init__
-        # self.tag_dict = {v: k for k, v in enumerate(tag_vocabulary)}
-        # self.word_dict = {v: k for k, v in enumerate(word_vocabulary)}
+        self.tag_dict = {v: k for k, v in enumerate(tag_vocabulary)}
+        self.word_dict = {v: k for k, v in enumerate(word_vocabulary)}
 
     '''
     Loads a dataset. Specifically, returns a list of sentence_ids, and
@@ -82,16 +84,18 @@ class POSTagger:
                     #  3) add this sentence's tag list to tag_lists and word
                     #     list to word_lists
                     words = []
-                    words_and_pos = []
+                    words_and_pos = ""
                     tags = []
                     index = 0
                     for line in f:
                         for word in line.split():
                             word_and_pos = word.rsplit('/', 1)
-
-                            words.append(self.word_dict[word_and_pos[0]])
+                            word_index = self.unk_index
+                            if word_and_pos[0] in self.word_dict:
+                                word_index = self.word_dict[word_and_pos[0]]
+                            words.append(word_index)
                             tags.append(self.tag_dict[word_and_pos[1]])
-                            words_and_pos.append(word)
+                            words_and_pos += word + " "
 
                             if word_and_pos[1] == ".":
                                 sentence_id = name + str(index)
@@ -102,7 +106,7 @@ class POSTagger:
                                 tag_lists[sentence_id] = tags
 
                                 words = []
-                                words_and_pos = []
+                                words_and_pos = ""
                                 tags = []
 
                     # If we don't ever see the sentence termination we assume all words collected to that point are a
@@ -127,23 +131,23 @@ class POSTagger:
         N = len(self.tag_dict)
         v = np.zeros((N, T))
         backpointer = np.zeros((N, T), dtype=int)
-        best_path = []
+        best_path = [None] * T
         # BEGIN STUDENT CODE
         # initialization step
         #  fill out first column of viterbi trellis
         #  with initial + emission weights of the first observation
-        word, _ = sentence[0].rsplit('/', 1)
-        v[:, 0] = self.initial + self.emission[self.word_dict[word]]
+        v[:, 0] = self.initial + self.emission[sentence[0]]
 
         # recursion step
+        max_vector = None
         for i in range(1, T):
             #  1) fill out the t-th column of viterbi trellis
             #  with the max of the t-1-th column of trellis
             #  + transition weights to each state
             #  + emission weights of t-th observation
-            curr_word, curr_tag = sentence[i].rsplit('/', 1)
+            curr_word = sentence[i]
             viterbi_prev_word = np.reshape(v[:, i - 1], (len(v[:, i - 1]), 1))
-            word_emission_probs = self.emission[self.word_dict[curr_word], :]
+            word_emission_probs = self.emission[curr_word, :]
 
             mat = viterbi_prev_word + self.transition + word_emission_probs
             max_vector = np.amax(mat, axis=0)
@@ -152,10 +156,18 @@ class POSTagger:
             #  2) fill out the t-th column of the backpointer trellis
             #  with the associated argmax values
             # termination step
-            backpointer[:, i] = np.where(mat == max_vector)[0]
+            vec = np.argmax(mat, axis=0)
+            backpointer[:, i] = vec
 
-            #  1) get the most likely ending state, insert it into best_path
-            #  2) fill out best_path from backpointer trellis`
+        #  1) get the most likely ending state, insert it into best_path
+        final_state_max = np.where(max_vector == np.amax(max_vector))[0][0]
+        best_path[-1] = final_state_max
+
+        #  2) fill out best_path from backpointer trellis`
+        for i in range(T - 1, 0, -1):
+            col = backpointer[:, i]
+            bp = col[best_path[i]]
+            best_path[i - 1] = bp
 
         # END STUDENT CODE
         return best_path
@@ -167,25 +179,41 @@ class POSTagger:
     def train(self, train_set, dummy_data=None):
         self.make_dicts(train_set)
         sentence_ids, sentences, tag_lists, word_lists = self.load_data(train_set)
-        # if dummy_data is None:  # for automated testing: DO NOT CHANGE!!
-        #     Random(0).shuffle(sentence_ids)
-        #     self.initial = np.zeros(len(self.tag_dict))
-        #     self.transition = np.zeros((len(self.tag_dict), len(self.tag_dict)))
-        #     self.emission = np.zeros((len(self.word_dict), len(self.tag_dict)))
-        # else:
-        #     sentence_ids = dummy_data[0]
-        #     sentences = dummy_data[1]
-        #     tag_lists = dummy_data[2]
-        #     word_lists = dummy_data[3]
+        if dummy_data is None:  # for automated testing: DO NOT CHANGE!!
+            Random(0).shuffle(sentence_ids)
+            self.initial = np.zeros(len(self.tag_dict))
+            self.transition = np.zeros((len(self.tag_dict), len(self.tag_dict)))
+            self.emission = np.zeros((len(self.word_dict), len(self.tag_dict)))
+        else:
+            sentence_ids = dummy_data[0]
+            sentences = dummy_data[1]
+            tag_lists = dummy_data[2]
+            word_lists = dummy_data[3]
         for i, sentence_id in enumerate(sentence_ids):
             # BEGIN STUDENT CODE
             # get the word sequence for this sentence and the correct tag sequence
             # use viterbi to predict
-            self.viterbi(sentences[sentence_id])
+            correct_tags = tag_lists[sentence_id]
+            pred_tags = self.viterbi(word_lists[sentence_id])
 
             # if mistake
-            #  promote weights that appear in correct sequence
-            #  demote weights that appear in (incorrect) predicted sequence
+            if correct_tags != pred_tags:
+                self.initial[correct_tags[0]] += 1
+                self.initial[pred_tags[0]] -= 1
+                words = word_lists[sentence_id]
+                for j in range(len(correct_tags)):
+                    corr_tag, pred_tag, word = correct_tags[j], pred_tags[j], words[j]
+
+                    # promote weights that appear in correct sequence
+                    self.emission[word][corr_tag] += 1
+                    if j + 1 < len(correct_tags):
+                        self.transition[corr_tag][correct_tags[j + 1]] += 1
+
+                    #  demote weights that appear in (incorrect) predicted sequence
+                    self.emission[word][pred_tag] -= 1
+                    if j + 1 < len(pred_tags):
+                        self.transition[pred_tag][pred_tags[j + 1]] -= 1
+
             # END STUDENT CODE
             if (i + 1) % 1000 == 0 or i + 1 == len(sentence_ids):
                 print(i + 1, 'training sentences tagged')
@@ -209,6 +237,10 @@ class POSTagger:
         for i, sentence_id in enumerate(sentence_ids):
             # BEGIN STUDENT CODE
             # should be very similar to train function before mistake check
+            correct_tags = tag_lists[sentence_id]
+            best_path = self.viterbi(word_lists[sentence_id])
+            results[sentence_id]['correct'] = correct_tags
+            results[sentence_id]['predicted'] = best_path
             # END STUDENT CODE
             if (i + 1) % 1000 == 0 or i + 1 == len(sentence_ids):
                 print(i + 1, 'testing sentences tagged')
@@ -226,6 +258,15 @@ class POSTagger:
         accuracy = 0.0
         # BEGIN STUDENT CODE
         # for each sentence, how many words were correctly tagged out of the total words in that sentence?
+        total_correct = 0
+        total_words = 0
+        for sentence_id in results:
+            for correct, predicted in zip(results[sentence_id]['correct'], results[sentence_id]['predicted']):
+                total_correct += correct == predicted
+                total_words += 1
+                # total_correct += sum(x == y for x, y in zip(correct, predicted))
+                # total_words += len(correct)
+        accuracy = total_correct / float(total_words)
         # END STUDENT CODE
         return accuracy
 
