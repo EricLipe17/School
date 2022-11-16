@@ -82,13 +82,13 @@ class TrainedDistributionalSemanticModel:
         for question in self.sat_questions:
             an_v1 = self.word_vec_map.get(question.analogy[0], self.unk_vec)
             an_v2 = self.word_vec_map.get(question.analogy[1], self.unk_vec)
-            an_vec = np.abs(np.subtract(an_v2, an_v1))
+            an_vec = np.abs(np.add(an_v2, an_v1))
             predicted_solution = None
             for i, possibility in enumerate(question.possibilities):
                 split = possibility.split()
                 p_v1 = self.word_vec_map.get(split[0], self.unk_vec)
                 p_v2 = self.word_vec_map.get(split[1], self.unk_vec)
-                p_vec = np.abs(np.subtract(p_v2, p_v1))
+                p_vec = np.abs(np.add(p_v2, p_v1))
                 similarity = self.cos_sim(p_vec, an_vec)
 
                 if predicted_solution is None:
