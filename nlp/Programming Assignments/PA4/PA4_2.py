@@ -82,13 +82,13 @@ class TrainedDistributionalSemanticModel:
         for question in self.sat_questions:
             an_v1 = self.word_vec_map.get(question.analogy[0], self.unk_vec)
             an_v2 = self.word_vec_map.get(question.analogy[1], self.unk_vec)
-            an_vec = np.abs(np.add(an_v2, an_v1))
+            an_vec = np.concatenate((an_v1, an_v2), axis=None)
             predicted_solution = None
             for i, possibility in enumerate(question.possibilities):
                 split = possibility.split()
                 p_v1 = self.word_vec_map.get(split[0], self.unk_vec)
                 p_v2 = self.word_vec_map.get(split[1], self.unk_vec)
-                p_vec = np.abs(np.add(p_v2, p_v1))
+                p_vec = np.concatenate((p_v1, p_v2), axis=None)
                 similarity = self.cos_sim(p_vec, an_vec)
 
                 if predicted_solution is None:
@@ -102,13 +102,15 @@ class TrainedDistributionalSemanticModel:
         for question in self.sat_questions:
             correct += (question.solution == question.predicted_solution)
         accuracy = float(correct) / len(self.sat_questions)
-        print(f"Accuracy: {accuracy * 100}%")
+        print(f"\tAccuracy: {accuracy * 100}%")
 
 
+print("Evaluating the Google vectors:")
 google = TrainedDistributionalSemanticModel("GoogleNews-vectors-rcv_vocab.txt.tar", "sat_data")
 google.test()
 google.evaluate()
 
+print("\nEvaluating the COMPOSE vectors:")
 compose = TrainedDistributionalSemanticModel("EN-wform.w.2.ppmi.svd.500.rcv_vocab-1.txt.tar", "sat_data")
 compose.test()
 compose.evaluate()
