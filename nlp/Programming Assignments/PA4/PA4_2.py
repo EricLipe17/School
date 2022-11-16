@@ -106,8 +106,9 @@ class TrainedDistributionalSemanticModel:
 
 
 google = TrainedDistributionalSemanticModel("GoogleNews-vectors-rcv_vocab.txt.tar", "sat_data")
-compose = TrainedDistributionalSemanticModel("EN-wform.w.2.ppmi.svd.500.rcv_vocab-1.txt.tar", "sat_data")
 google.test()
 google.evaluate()
+
+compose = TrainedDistributionalSemanticModel("EN-wform.w.2.ppmi.svd.500.rcv_vocab-1.txt.tar", "sat_data")
 compose.test()
 compose.evaluate()
