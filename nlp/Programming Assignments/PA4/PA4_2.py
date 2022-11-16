@@ -102,7 +102,7 @@ class TrainedDistributionalSemanticModel:
         for question in self.sat_questions:
             correct += (question.solution == question.predicted_solution)
         accuracy = float(correct) / len(self.sat_questions)
-        print(f"\tAccuracy: {accuracy * 100} %")
+        print(f"\tAccuracy: {accuracy * 100}%")
 
 
 print("Evaluating the Google vectors:")
