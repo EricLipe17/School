@@ -58,7 +58,7 @@ class TrainedDistributionalSemanticModel:
                                 splits = line.split()
                                 analogy = SATAnalogyQuestion(splits)
                                 self.sat_questions.append(analogy)
-                            elif line[0:3] == "190":
+                            elif line[0:3] == "190" or line[0:2] == "KS" or line[0:2] == "ML":
                                 prev_ln_was_header = True
                             else:
                                 analogy.add_possibility(line)
