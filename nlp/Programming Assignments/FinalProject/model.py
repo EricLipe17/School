@@ -180,7 +180,14 @@ class SpeechRecognitionModel(nn.Module):
                            100. * batch_idx / len(self.train_loader),
                     loss.item()))
                 if self.save_model:
-                    torch.save(self.state_dict(), "./model/asr_model.pt")
+                    state = {'asr_state_dict': self.state_dict(), 'cnn_state_dict': self.cnn.state_dict(),
+                             'rescnn_state_dict': self.rescnn_layers.state_dict(),
+                             'fully_connected_state_dict': self.fully_connected.state_dict(),
+                             'birnn_state_dict': self.birnn_layers.state_dict(),
+                             'classifier_state_dict': self.classifier.state_dict(),
+                             'optimizer': self.optimizer.state_dict(), 'scheduler': self.scheduler.state_dict(),
+                             'criterion_state_dict': self.criterion.state_dict(), 'hparams': self.hparams}
+                    torch.save(state, "./model/asr_model.pt")
 
             del spectrograms, labels, input_lengths, label_lengths, output, loss
 
@@ -206,6 +213,7 @@ class SpeechRecognitionModel(nn.Module):
                 for j in range(len(decoded_preds)):
                     test_cer.append(cer(decoded_targets[j], decoded_preds[j]))
                     test_wer.append(wer(decoded_targets[j], decoded_preds[j]))
+                del spectrograms, labels, input_lengths, label_lengths, output, loss
 
         avg_cer = sum(test_cer) / len(test_cer)
         avg_wer = sum(test_wer) / len(test_wer)
