@@ -2,7 +2,7 @@ from pydub import AudioSegment
 import pandas as pd
 import os
 
-
+# Convert mp3 to wav for pytorch ingestion
 for root, dirs, files in os.walk("C:\\Users\\EricL\\School\\nlp\\Programming Assignments\\FinalProject\\data\\archive\\"):
     for name in files:
         no_ext_name, ext = name.split(sep=".")

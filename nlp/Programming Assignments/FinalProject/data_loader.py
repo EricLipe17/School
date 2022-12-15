@@ -1,9 +1,7 @@
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.utils.data as data
 import torchaudio
-import matplotlib.pyplot as plt
 
 class TextTransformer:
     """Maps characters to integers and vice versa"""
@@ -64,79 +62,6 @@ class TextTransformer:
         for i in labels:
             string.append(self.index_map[i])
         return ''.join(string).replace('<SPACE>', ' ')
-
-
-class DataPreprocessorCSV:
-    def __init__(self, csv_path, csv_name, data_path, batch_size, data_type="train"):
-        self.csv_path = csv_path
-        self.csv_name = csv_name
-        self.data_path = data_path
-        self.batch_size = batch_size
-
-        self.data_type = data_type
-        if data_type == "train":
-            self.audio_transformer = nn.Sequential(
-                torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=128),
-                torchaudio.transforms.FrequencyMasking(freq_mask_param=30),
-                torchaudio.transforms.TimeMasking(time_mask_param=100)
-            )
-        else:
-            self.audio_transformer = torchaudio.transforms.MelSpectrogram()
-
-        self.text_transformer = TextTransformer()
-
-        self.df = pd.read_csv(self.csv_path + self.csv_name)
-
-    def __row_generator(self):
-        for row in self.df.iterrows():
-            yield row
-
-    def plot_specgram(self, waveform, sample_rate, title="Spectrogram", xlim=None):
-        waveform = waveform.numpy()
-
-        num_channels, num_frames = waveform.shape
-
-        figure, axes = plt.subplots(num_channels, 1)
-        if num_channels == 1:
-            axes = [axes]
-        for c in range(num_channels):
-            axes[c].specgram(waveform[c], Fs=sample_rate)
-            if num_channels > 1:
-                axes[c].set_ylabel(f'Channel {c + 1}')
-            if xlim:
-                axes[c].set_xlim(xlim)
-        figure.suptitle(title)
-        plt.show(block=False)
-
-    def __load_next_batch(self):
-        batch = list()
-        for i in range(self.batch_size):
-            row = next(self.__row_generator())[1]
-            fn = row["filename"]
-            label = row["text"]
-            waveform = torchaudio.load(self.data_path + fn)[0]
-            # self.plot_specgram(waveform[0], waveform[1])
-            batch.append((waveform, label))
-        return batch
-
-    def get_next_batch(self):
-        spectrograms = []
-        labels = []
-        input_lengths = []
-        label_lengths = []
-        raw_batch = self.__load_next_batch()
-        for (waveform, label) in raw_batch:
-            spec = self.audio_transformer(waveform).squeeze(0).transpose(0, 1)
-            spectrograms.append(spec)
-            label = torch.Tensor(self.text_transformer.text_to_int(label.lower()))
-            labels.append(label)
-            input_lengths.append(spec.shape[0] // 2)
-            label_lengths.append(len(label))
-
-        spectrograms = nn.utils.rnn.pad_sequence(spectrograms, batch_first=True).unsqueeze(1).transpose(2, 3)
-        labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)
-
-        yield spectrograms, labels, input_lengths, label_lengths
 
 
 class DataLoader:
